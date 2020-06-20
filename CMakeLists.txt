@@ -25,10 +25,16 @@ if(NOT EXISTS "${GTEST_SRCDIR}/CMakeLists.txt")
   set(GTEST_FOUND No)
 endif()
 
+find_package(Boost 1.65 COMPONENTS program_options REQUIRED)
+
 ### Main targets ##############################################################
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_PATH}/main.cpp)
-target_link_libraries(${CMAKE_PROJECT_NAME} stdc++fs)
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIR})
+target_link_libraries(
+  ${CMAKE_PROJECT_NAME}
+  stdc++fs
+  ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
 ### Tests #####################################################################
 
