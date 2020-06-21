@@ -1,6 +1,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -10,12 +11,15 @@ int main(int argc, char **argv) {
     po::positional_options_description positional_description { };
     positional_description.add("target", -1);
 
+    po::options_description hidden_description { "Hidden options" };
+    hidden_description.add_options()
+      ("target", po::value<vector<string>>(),"target directories");
+
     po::options_description named_description {
       "Usage: bayan [OPTIONS...] DIRS...\nAllowed options"
     };
 
     named_description.add_options()
-      ("target", "target directories")
       ("help,h", "give this help list")
       ("exclude,e", "list of directories to exclude")
       ("level,l",
@@ -38,6 +42,7 @@ int main(int argc, char **argv) {
     po::store(
       po::command_line_parser(argc, argv)
         .options(named_description)
+        .options(hidden_description)
         .positional(positional_description)
         .run(),
       variables);
