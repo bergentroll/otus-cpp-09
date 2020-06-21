@@ -6,16 +6,17 @@
 #include "bayan.hpp"
 
 using namespace std;
+using namespace otus;
 namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
   try {
     po::positional_options_description positional_description { };
-    positional_description.add("target", -1);
+    positional_description.add("targets", -1);
 
     po::options_description hidden_description { "Hidden options" };
     hidden_description.add_options()
-      ("target", po::value<vector<string>>(),"target directories");
+      ("targets", po::value<vector<string>>(),"targets directories");
 
     po::options_description named_description {
       "Usage: bayan [OPTIONS...] DIRS...\nAllowed options"
@@ -31,10 +32,10 @@ int main(int argc, char **argv) {
         po::value<string>()->default_value("*"),
         "mask of files to compare")
       ("min-file,s",
-        po::value<int>()->default_value(2),
+        po::value<long>()->default_value(2),
         "lower limit of files in bytes to compare")
       ("block-size,b",
-        po::value<int>()->default_value(1024),
+        po::value<long>()->default_value(1024),
         "default block size in bytes to process")
       ("hash-func,f",
         po::value<int>()->default_value(0),
@@ -52,9 +53,22 @@ int main(int argc, char **argv) {
       variables);
     po::notify(variables);
 
-    if (variables.count("help")) std::cout << named_description<< endl;
+    if (variables.count("help")) {
+      std::cout << named_description<< endl;
+      return EXIT_SUCCESS;
+    }
+
+    otus::Bayan bayan { variables["targets"].as<vector<string>>() };
+    bayan.setLevel(variables["level"].as<int>());
+    bayan.setMask(variables["mask"].as<string>());
+    bayan.setMinFileSize(variables["min-file"].as<long>());
+    bayan.setBlockSize(variables["block-size"].as<long>());
   } catch (po::error &e) {
-    cerr << e.what() << endl;
+    cerr << "Options error: " << e.what() << endl;
+    return EXIT_FAILURE;
+  } catch (otus::Bayan::Error &e) {
+    cerr << "Runtime error: " << e.what() << endl;
+    return EXIT_FAILURE;
   }
 
   return EXIT_SUCCESS;
