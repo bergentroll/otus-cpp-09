@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
@@ -16,7 +17,9 @@ int main(int argc, char **argv) {
 
     po::options_description hidden_description { "Hidden options" };
     hidden_description.add_options()
-      ("targets", po::value<vector<string>>(),"targets directories");
+      ("targets",
+        po::value<vector<string>>()->multitoken()->zero_tokens(),
+        "targets directories");
 
     po::options_description named_description {
       "Usage: bayan [OPTIONS...] DIRS...\nAllowed options"
@@ -58,11 +61,18 @@ int main(int argc, char **argv) {
       return EXIT_SUCCESS;
     }
 
-    otus::Bayan bayan { variables["targets"].as<vector<string>>() };
+    vector<string> targets;
+    if (variables["targets"].empty())
+      targets = vector<string>({ "./" });
+    else
+      targets = variables["targets"].as<vector<string>>();
+
+    otus::Bayan bayan { move(targets) };
     bayan.setLevel(variables["level"].as<int>());
     bayan.setMask(variables["mask"].as<string>());
     bayan.setMinFileSize(variables["min-file"].as<long>());
     bayan.setBlockSize(variables["block-size"].as<long>());
+    bayan.run();
   } catch (po::error &e) {
     cerr << "Options error: " << e.what() << endl;
     return EXIT_FAILURE;

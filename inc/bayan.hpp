@@ -13,8 +13,12 @@ namespace otus {
       Error(std::string const &message): std::runtime_error(message) { }
     };
 
-    Bayan(std::vector<std::string> targets): targets(targets) {
-      if (this->targets.empty()) targets.push_back("./");
+    Bayan() {
+      targets.push_back("./");
+    }
+
+    Bayan(std::vector<std::string> const &targets): targets(targets) {
+      if (this->targets.empty()) Bayan();
     }
 
     void setLevel(int level) { }
@@ -40,12 +44,20 @@ namespace otus {
 
     size_t getBlockSize() { return blockSize; }
 
+    void run() {
+      for (auto const &path: targets) {
+        process(path);
+      }
+    }
+
   private:
     std::vector<std::string> targets;
     int level { -1 };
     std::string mask { "*" };
     size_t minFileSize { 2 };
     size_t blockSize { 1024 };
+
+    void process(std::string const &) { }
   };
 }
 
