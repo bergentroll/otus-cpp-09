@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "bayan.hpp"
+
 using namespace std;
 namespace po = boost::program_options;
 
@@ -38,18 +40,20 @@ int main(int argc, char **argv) {
         po::value<int>()->default_value(0),
         "reserved for future usage");
 
+    po::options_description cmdline_description { };
+    cmdline_description.add(hidden_description).add(named_description);
+
     po::variables_map variables;
     po::store(
       po::command_line_parser(argc, argv)
-        .options(named_description)
-        .options(hidden_description)
+        .options(cmdline_description)
         .positional(positional_description)
         .run(),
       variables);
     po::notify(variables);
 
     if (variables.count("help")) std::cout << named_description<< endl;
-  } catch (po::unknown_option &e) {
+  } catch (po::error &e) {
     cerr << e.what() << endl;
   }
 
