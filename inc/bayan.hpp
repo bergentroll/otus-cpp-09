@@ -1,13 +1,19 @@
 #ifndef OTUS_BAYAN_HPP
 #define OTUS_BAYAN_HPP
 
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+// TODO Delete
+#include <iostream>
+
 namespace otus {
   class Bayan {
   public:
+    using Path = std::filesystem::path;
+
     class Error: public std::runtime_error {
     public:
       Error(std::string const &message): std::runtime_error(message) { }
@@ -17,7 +23,10 @@ namespace otus {
       targets.push_back("./");
     }
 
-    Bayan(std::vector<std::string> const &targets): targets(targets) {
+    Bayan(std::vector<Path> const &targets): targets(targets) {
+      for (auto const &path: targets)
+        if (!std::filesystem::exists(path))
+          throw Error("path \"" + std::string(path) + " does not exist");
       if (this->targets.empty()) Bayan();
     }
 
@@ -51,7 +60,7 @@ namespace otus {
     }
 
   private:
-    std::vector<std::string> targets;
+    std::vector<Path> targets;
     int level { -1 };
     std::string mask { "*" };
     size_t minFileSize { 2 };

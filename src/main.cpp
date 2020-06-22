@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <boost/program_options.hpp>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -8,6 +9,7 @@
 
 using namespace std;
 using namespace otus;
+namespace fi = std::filesystem;
 namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
@@ -18,7 +20,7 @@ int main(int argc, char **argv) {
     po::options_description hidden_description { "Hidden options" };
     hidden_description.add_options()
       ("targets",
-        po::value<vector<string>>()->multitoken()->zero_tokens(),
+        po::value<vector<fi::path>>()->multitoken()->zero_tokens(),
         "targets directories");
 
     po::options_description named_description {
@@ -61,11 +63,11 @@ int main(int argc, char **argv) {
       return EXIT_SUCCESS;
     }
 
-    vector<string> targets;
+    vector<fi::path> targets;
     if (variables["targets"].empty())
-      targets = vector<string>({ "./" });
+      targets = vector<fi::path>({ "./" });
     else
-      targets = variables["targets"].as<vector<string>>();
+      targets = variables["targets"].as<vector<fi::path>>();
 
     otus::Bayan bayan { move(targets) };
     bayan.setLevel(variables["level"].as<int>());
