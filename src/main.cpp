@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace otus;
-namespace fi = std::filesystem;
+namespace fs = std::filesystem;
 namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
     po::options_description hidden_description { "Hidden options" };
     hidden_description.add_options()
       ("targets",
-        po::value<vector<fi::path>>()->multitoken()->zero_tokens(),
+        po::value<vector<fs::path>>()->multitoken()->zero_tokens(),
         "targets directories");
 
     po::options_description named_description {
@@ -63,11 +63,11 @@ int main(int argc, char **argv) {
       return EXIT_SUCCESS;
     }
 
-    vector<fi::path> targets;
+    vector<fs::path> targets;
     if (variables["targets"].empty())
-      targets = vector<fi::path>({ "./" });
+      targets = vector<fs::path>({ "./" });
     else
-      targets = variables["targets"].as<vector<fi::path>>();
+      targets = variables["targets"].as<vector<fs::path>>();
 
     otus::Bayan bayan { move(targets) };
     bayan.setLevel(variables["level"].as<int>());
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   } catch (otus::Bayan::Error &e) {
     cerr << "Runtime error: " << e.what() << endl;
-    return EXIT_FAILURE;
+    //return EXIT_FAILURE;
   }
 
   return EXIT_SUCCESS;

@@ -5,15 +5,16 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <system_error>
 
 // TODO Delete
 #include <iostream>
 
 namespace otus {
+  namespace fs = std::filesystem;
+
   class Bayan {
   public:
-    using Path = std::filesystem::path;
-
     class Error: public std::runtime_error {
     public:
       Error(std::string const &message): std::runtime_error(message) { }
@@ -23,9 +24,9 @@ namespace otus {
       targets.push_back("./");
     }
 
-    Bayan(std::vector<Path> const &targets): targets(targets) {
+    Bayan(std::vector<fs::path> const &targets): targets(targets) {
       for (auto const &path: targets)
-        if (!std::filesystem::exists(path))
+        if (!fs::exists(path))
           throw Error("path \"" + std::string(path) + " does not exist");
       if (this->targets.empty()) Bayan();
     }
@@ -55,18 +56,43 @@ namespace otus {
 
     void run() {
       for (auto const &path: targets) {
-        process(path);
+        traverse(path);
       }
     }
 
   private:
-    std::vector<Path> targets;
+    std::vector<fs::path> targets;
     int level { -1 };
     std::string mask { "*" };
     size_t minFileSize { 2 };
     size_t blockSize { 1024 };
 
-    void process(std::string const &) { }
+    // TODO if path=file
+    void traverse(fs::path const &path) {
+      try {
+        std::error_code error { };
+        for (
+            fs::recursive_directory_iterator it {
+              path, fs::directory_options::skip_permission_denied }, end_it { };
+            it != end_it;
+            ++it) {
+          auto entry { *it };
+          if (entry.is_directory()) {
+            auto tmp { fs::directory_iterator(entry, error) };
+            if (error) {
+              std::cerr << error.message() << " on " << entry << std::endl;
+              continue;
+            }
+          }
+          std::cout << entry << std::endl;
+        }
+      } catch (fs::filesystem_error &e) {
+        throw Error(e.what());
+      }
+    }
+
+    void makeHash() {
+    }
   };
 }
 
