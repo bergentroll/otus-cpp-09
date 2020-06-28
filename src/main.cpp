@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <boost/program_options.hpp>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <string>

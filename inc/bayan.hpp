@@ -2,17 +2,12 @@
 #define OTUS_BAYAN_HPP
 
 #include <filesystem>
+#include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <system_error>
-
-#include <fstream>
-#include <boost/crc.hpp>
 #include <unordered_map>
-
-// TODO Delete
-#include <iostream>
+#include <vector>
 
 namespace otus {
   namespace fs = std::filesystem;
@@ -59,6 +54,9 @@ namespace otus {
     size_t getBlockSize() { return blockSize; }
 
     void run() {
+      // Ищем файлы.
+      // Сравниваем хэши.
+      // Выводим дубли.
       for (auto const &path: targets) {
         traverse(path);
       }
@@ -101,7 +99,6 @@ namespace otus {
     }
 
     void makeDigest(fs::path const &path) {
-      //std::cout << path << std::endl;
       std::ifstream file { path };
       if (!file) {
         std::cerr << "Failed to open " << path << std::endl;
@@ -116,8 +113,6 @@ namespace otus {
       } while (file);
 
       digests[path] = result.checksum();
-
-      //std::cout << result.checksum() << std::endl;
     }
 
     void findCollisions() {
