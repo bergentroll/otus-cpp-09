@@ -7,6 +7,10 @@
 #include <vector>
 #include <system_error>
 
+#include <fstream>
+#include <boost/crc.hpp>
+#include <unordered_map>
+
 // TODO Delete
 #include <iostream>
 
@@ -58,6 +62,7 @@ namespace otus {
       for (auto const &path: targets) {
         traverse(path);
       }
+      findCollisions();
     }
 
   private:
@@ -66,9 +71,12 @@ namespace otus {
     std::string mask { "*" };
     size_t minFileSize { 2 };
     size_t blockSize { 1024 };
+    std::unordered_map<std::string, unsigned> digests;
 
-    // TODO if path=file
     void traverse(fs::path const &path) {
+      if (fs::is_regular_file(path))
+        return makeDigest(path);
+
       try {
         std::error_code error { };
         for (
@@ -83,15 +91,43 @@ namespace otus {
               std::cerr << error.message() << " on " << entry << std::endl;
               continue;
             }
+          } else if (entry.is_regular_file() && !entry.is_symlink()) {
+            makeDigest(entry);
           }
-          std::cout << entry << std::endl;
         }
       } catch (fs::filesystem_error &e) {
         throw Error(e.what());
       }
     }
 
-    void makeHash() {
+    void makeDigest(fs::path const &path) {
+      //std::cout << path << std::endl;
+      std::ifstream file { path };
+      if (!file) {
+        std::cerr << "Failed to open " << path << std::endl;
+        return;
+      }
+
+      boost::crc_32_type result;
+      do {
+        char buffer[100];
+        file.read(buffer, 100);
+        result.process_bytes(buffer, file.gcount());
+      } while (file);
+
+      digests[path] = result.checksum();
+
+      //std::cout << result.checksum() << std::endl;
+    }
+
+    void findCollisions() {
+      for (auto [path, digest]: digests) {
+        for (auto [path_other, digest_other]: digests) {
+          if (path != path_other && digest == digest_other) {
+            std::cout << path << " is duplicate of " << path_other << std::endl;
+          }
+        }
+      }
     }
   };
 }
