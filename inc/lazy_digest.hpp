@@ -20,31 +20,46 @@ namespace otus {
     };
 
     LazyDigest(fs::path const &path): path(path) {
-      uintmax_t size;
       try {
         size = fs::file_size(path);
       } catch (fs::filesystem_error &e) {
         throw Error(e);
       }
+
       length = size / block_size + bool(size % block_size);
       digest.reserve(length);
     }
 
+    unsigned at(size_t idx) {
+      if (idx > length)
+        throw std::out_of_range(
+          "index " +
+          std::to_string(idx) +
+          " is out of range");
+      else if (idx < block)
+        return digest[idx];
+
+      while(idx < block) getNextBlockDigetst();
+    }
+
     bool operator ==(LazyDigest &other) {
-      // Сверяем размер.
-      // Делаем ленивое вычисление.
+      if (size != other.size) return false;
+      for (size_t i { }; i < length; ++i) {
+        if (at(i) != other.at(i)) return false;
+      }
+      return true;
     }
 
     bool isCompleted() { return block == length; }
 
   private:
     fs::path path;
+    uintmax_t size;
     uintmax_t length;
     std::vector<unsigned> digest { };
     size_t block { 0 };
 
-    bool getNextBlockDigetst() {
-      if (isCompleted()) return false;
+    void getNextBlockDigetst() {
       std::ifstream file { path };
 
       if (!file) throw Error("failed to open " + std::string(path));
@@ -58,7 +73,6 @@ namespace otus {
 
       digest.push_back(result.checksum());
       ++block;
-      return true;
     }
   };
 }
