@@ -82,10 +82,13 @@ namespace otus {
     std::vector<LazyDigest> digests { };
 
     void appendDigest(fs::path const &path) {
+      std::cerr << path << std::endl;
       try {
         digests.push_back(LazyDigest(path, blockSize));
       } catch (LazyDigest::FileError const &e) {
         std::cerr << e.what() << std::endl;
+      } catch (std::bad_alloc const &e) {
+        std::cerr << "Failed to process " << path << std::endl;
       }
     }
 
