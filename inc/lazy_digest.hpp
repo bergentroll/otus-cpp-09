@@ -45,6 +45,12 @@ namespace otus {
       return digest[idx];
     }
 
+    bool forward() {
+      if (isCompleted()) return false;
+      getNextBlockDigetst();
+      return true;
+    }
+
     bool operator ==(LazyDigest &other) {
       if (blockSize != other.blockSize)
         throw BlockSizeError("comparing LazyDigest objects with different blocksize");
@@ -60,7 +66,7 @@ namespace otus {
 
     fs::path const &getPath() const { return path; }
 
-    operator std::string() {
+    operator std::string() const {
       std::stringstream ss { };
       ss << std::hex;
       for (auto it { digest.cbegin() }; it != digest.cend(); ++it) {
@@ -94,6 +100,11 @@ namespace otus {
       ++block;
     }
   };
+
+  std::ostream & operator<< (std::ostream &stream, LazyDigest const &digest) {
+    stream << std::string(digest);
+    return stream;
+  }
 }
 
 #endif
