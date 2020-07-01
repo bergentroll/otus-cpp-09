@@ -11,35 +11,32 @@
 namespace otus {
   namespace fs = std::filesystem;
 
-  template <size_t block_size>
   class LazyDigest {
-    public:
+  public:
     class Error: public std::runtime_error {
     public:
       Error(std::string const &message): std::runtime_error (message) { }
     };
 
-    LazyDigest(fs::path const &path): path(path) {
+    LazyDigest(fs::path const &path, size_t blockSize):
+    blockSize(blockSize), path(path) {
       try {
         size = fs::file_size(path);
       } catch (fs::filesystem_error &e) {
-        throw Error(e);
+        throw Error(e.what());
       }
 
-      length = size / block_size + bool(size % block_size);
+      length = size / blockSize + bool(size % blockSize);
       digest.reserve(length);
     }
 
     unsigned at(size_t idx) {
-      if (idx > length)
-        throw std::out_of_range(
-          "index " +
-          std::to_string(idx) +
-          " is out of range");
-      else if (idx < block)
-        return digest[idx];
+      if (idx > length) throw std::out_of_range(
+          "index " + std::to_string(idx) + " is out of range");
 
-      while(idx < block) getNextBlockDigetst();
+      while(idx > block) getNextBlockDigetst();
+
+      return digest[idx];
     }
 
     bool operator ==(LazyDigest &other) {
@@ -50,9 +47,12 @@ namespace otus {
       return true;
     }
 
-    bool isCompleted() { return block == length; }
+    bool isCompleted() const { return block == length; }
+
+    fs::path const &getPath() const { return path; }
 
   private:
+    size_t blockSize;
     fs::path path;
     uintmax_t size;
     uintmax_t length;
@@ -64,12 +64,12 @@ namespace otus {
 
       if (!file) throw Error("failed to open " + std::string(path));
 
-      auto buf { std::string(block_size, '\0') };
-      if (!file.read(&buf[0], block_size))
+      auto buf { std::string(blockSize, '\0') };
+      if (!file.read(&buf[0], blockSize))
         throw Error("unexpected end of " + std::string(path));
 
       boost::crc_32_type result;
-      result.process_bytes(buf.c_str(), block_size);
+      result.process_bytes(buf.c_str(), blockSize);
 
       digest.push_back(result.checksum());
       ++block;

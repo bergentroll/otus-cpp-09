@@ -76,12 +76,11 @@ int main(int argc, char **argv) {
     bayan.setMinFileSize(variables["min-file"].as<long>());
     bayan.setBlockSize(variables["block-size"].as<long>());
     bayan.run();
-  } catch (po::error &e) {
+  } catch (po::error const &e) {
     cerr << "Options error: " << e.what() << endl;
     return EXIT_FAILURE;
-  } catch (otus::Bayan::Error &e) {
+  } catch (otus::Bayan::Error const &e) {
     cerr << "Runtime error: " << e.what() << endl;
-    //return EXIT_FAILURE;
   }
 
   return EXIT_SUCCESS;

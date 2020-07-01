@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "lazy_digest.hpp"
+
 namespace otus {
   namespace fs = std::filesystem;
 
@@ -54,10 +56,16 @@ namespace otus {
     size_t getBlockSize() { return blockSize; }
 
     void run() {
-      // Ищем файлы.
       for (auto const &path: targets) traverse(path);
-      // Сравниваем хэши.
-      // Выводим дубли.
+      for (int i { 0 }; i < digests.size(); ++i) {
+        for (int j { i + 1 }; j < digests.size(); ++j) {
+          try {
+            if (digests[i] == digests[j]) 
+              std::cout << "DUP: " << digests[i].getPath() << " and " << digests[j].getPath() << std::endl;
+          } catch (...) { }
+        }
+      }
+      // TODO Print dups.
     }
 
   private:
@@ -66,11 +74,19 @@ namespace otus {
     std::string mask { "*" };
     size_t minFileSize { 2 };
     size_t blockSize { 1024 };
-    std::vector<fs::path> files;
+    std::vector<LazyDigest> digests { };
+
+    void appendDigest(fs::path const &path) {
+      try {
+        digests.push_back(LazyDigest(path, blockSize));
+      } catch (LazyDigest::Error const &e) {
+        std::cerr << e.what() << std::endl;
+      }
+    }
 
     void traverse(fs::path const &path) {
       if (fs::is_regular_file(path)) {
-        files.push_back(path);
+        appendDigest(path);
         return;
       }
 
@@ -89,10 +105,10 @@ namespace otus {
               continue;
             }
           } else if (entry.is_regular_file() && !entry.is_symlink()) {
-            files.push_back(entry);
+            appendDigest(entry);
           }
         }
-      } catch (fs::filesystem_error &e) {
+      } catch (fs::filesystem_error const &e) {
         throw Error(e.what());
       }
     }
