@@ -62,9 +62,12 @@ namespace otus {
           try {
             if (digests[i] == digests[j]) {
               std::cout << "DUP: " << digests[i].getPath() << " and " << digests[j].getPath() << std::endl;
-              std::cout << std::string(digests[i]) << std::endl;;
+              std::cout << std::string(digests[i]) << " and ";
+              std::cout << std::string(digests[j]) << std::endl;
             }
-          } catch (...) { }
+          } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+          }
         }
       }
       // TODO Print dups.
@@ -88,7 +91,11 @@ namespace otus {
 
     void traverse(fs::path const &path) {
       if (fs::is_regular_file(path)) {
-        appendDigest(path);
+        try {
+          if (fs::file_size(path) >= minFileSize) appendDigest(path);
+        } catch (fs::filesystem_error const &e) {
+          std::cerr << e.what() << std::endl;
+        }
         return;
       }
 
@@ -106,7 +113,10 @@ namespace otus {
               std::cerr << error.message() << " on " << entry << std::endl;
               continue;
             }
-          } else if (entry.is_regular_file() && !entry.is_symlink()) {
+          } else if (
+              entry.is_regular_file() &&
+              !entry.is_symlink() &&
+              fs::file_size(entry) >= minFileSize) {
             appendDigest(entry);
           }
         }
