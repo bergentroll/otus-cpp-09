@@ -60,8 +60,10 @@ namespace otus {
       for (int i { 0 }; i < digests.size(); ++i) {
         for (int j { i + 1 }; j < digests.size(); ++j) {
           try {
-            if (digests[i] == digests[j]) 
+            if (digests[i] == digests[j]) {
               std::cout << "DUP: " << digests[i].getPath() << " and " << digests[j].getPath() << std::endl;
+              std::cout << std::string(digests[i]) << std::endl;;
+            }
           } catch (...) { }
         }
       }
@@ -79,7 +81,7 @@ namespace otus {
     void appendDigest(fs::path const &path) {
       try {
         digests.push_back(LazyDigest(path, blockSize));
-      } catch (LazyDigest::Error const &e) {
+      } catch (LazyDigest::FileError const &e) {
         std::cerr << e.what() << std::endl;
       }
     }

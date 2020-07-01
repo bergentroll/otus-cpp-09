@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -13,9 +14,14 @@ namespace otus {
 
   class LazyDigest {
   public:
-    class Error: public std::runtime_error {
+    class FileError: public std::runtime_error {
     public:
-      Error(std::string const &message): std::runtime_error (message) { }
+      FileError(std::string const &message): std::runtime_error (message) { }
+    };
+
+    class BlockSizeError: public std::domain_error {
+      public:
+      BlockSizeError(std::string const &message): std::domain_error(message) { }
     };
 
     LazyDigest(fs::path const &path, size_t blockSize):
@@ -23,7 +29,7 @@ namespace otus {
       try {
         size = fs::file_size(path);
       } catch (fs::filesystem_error &e) {
-        throw Error(e.what());
+        throw FileError(e.what());
       }
 
       length = size / blockSize + bool(size % blockSize);
@@ -40,6 +46,9 @@ namespace otus {
     }
 
     bool operator ==(LazyDigest &other) {
+      if (blockSize != other.blockSize)
+        throw BlockSizeError("comparing LazyDigest objects with different blocksize");
+
       if (size != other.size) return false;
       for (size_t i { }; i < length; ++i) {
         if (at(i) != other.at(i)) return false;
@@ -50,6 +59,16 @@ namespace otus {
     bool isCompleted() const { return block == length; }
 
     fs::path const &getPath() const { return path; }
+
+    operator std::string() {
+      std::stringstream ss { };
+      ss << std::hex;
+      for (auto it { digest.cbegin() }; it != digest.cend(); ++it) {
+        if (it != digest.cbegin()) ss << '-';
+        ss << *it;
+      }
+      return ss.str();
+    }
 
   private:
     size_t blockSize;
@@ -62,11 +81,11 @@ namespace otus {
     void getNextBlockDigetst() {
       std::ifstream file { path };
 
-      if (!file) throw Error("failed to open " + std::string(path));
+      if (!file) throw FileError("failed to open " + std::string(path));
 
       auto buf { std::string(blockSize, '\0') };
       if (!file.read(&buf[0], blockSize))
-        throw Error("unexpected end of " + std::string(path));
+        throw FileError("unexpected end of " + std::string(path));
 
       boost::crc_32_type result;
       result.process_bytes(buf.c_str(), blockSize);
