@@ -4,7 +4,6 @@
 #include <boost/crc.hpp>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -37,10 +36,10 @@ namespace otus {
     }
 
     unsigned at(size_t idx) {
-      if (idx > lengthInBlocks) throw std::out_of_range(
+      if (idx >= lengthInBlocks) throw std::out_of_range(
           "index " + std::to_string(idx) + " is out of range");
 
-      while (idx > block) getNextBlockDigest();
+      while (idx >= block) getNextBlockDigest();
 
       return digest[idx];
     }
@@ -55,7 +54,7 @@ namespace otus {
       while (forward());
     }
 
-    bool operator ==(LazyDigest &other) {
+    bool operator== (LazyDigest &other) {
       if (blockSize != other.blockSize)
         throw BlockSizeError("comparing LazyDigest objects with different blocksize");
 
@@ -66,6 +65,10 @@ namespace otus {
       return true;
     }
 
+    bool operator!= (LazyDigest &other) {
+      return (!operator==(other));
+    }
+
     bool isCompleted() const {
       return block == lengthInBlocks; }
 
@@ -74,9 +77,10 @@ namespace otus {
     operator std::string() const {
       std::stringstream ss { };
       ss << std::hex;
-      for (auto it { digest.cbegin() }; it != digest.cend(); ++it) {
-        if (it != digest.cbegin()) ss << '-';
-        ss << *it;
+      for (size_t i { }; i < lengthInBlocks; ++i) {
+        if (i > 0) ss << '-';
+        if (i < block) ss << digest[i];
+        else ss << "???";
       }
       return ss.str();
     }
