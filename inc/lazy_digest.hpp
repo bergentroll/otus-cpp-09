@@ -32,23 +32,27 @@ namespace otus {
         throw FileError(e.what());
       }
 
-      length = size / blockSize + bool(size % blockSize);
-      digest.reserve(length);
+      lengthInBlocks = size / blockSize + bool(size % blockSize);
+      digest.reserve(lengthInBlocks);
     }
 
     unsigned at(size_t idx) {
-      if (idx > length) throw std::out_of_range(
+      if (idx > lengthInBlocks) throw std::out_of_range(
           "index " + std::to_string(idx) + " is out of range");
 
-      while(idx > block) getNextBlockDigetst();
+      while (idx > block) getNextBlockDigest();
 
       return digest[idx];
     }
 
     bool forward() {
       if (isCompleted()) return false;
-      getNextBlockDigetst();
+      getNextBlockDigest();
       return true;
+    }
+
+    void completeNow() {
+      while (forward());
     }
 
     bool operator ==(LazyDigest &other) {
@@ -56,13 +60,14 @@ namespace otus {
         throw BlockSizeError("comparing LazyDigest objects with different blocksize");
 
       if (size != other.size) return false;
-      for (size_t i { }; i < length; ++i) {
+      for (size_t i { }; i < lengthInBlocks; ++i) {
         if (at(i) != other.at(i)) return false;
       }
       return true;
     }
 
-    bool isCompleted() const { return block == length; }
+    bool isCompleted() const {
+      return block == lengthInBlocks; }
 
     fs::path const &getPath() const { return path; }
 
@@ -80,17 +85,17 @@ namespace otus {
     size_t blockSize;
     fs::path path;
     uintmax_t size;
-    uintmax_t length;
+    uintmax_t lengthInBlocks;
     std::vector<unsigned> digest { };
     size_t block { 0 };
 
-    void getNextBlockDigetst() {
+    void getNextBlockDigest() {
       std::ifstream file { path };
-
       if (!file) throw FileError("failed to open " + std::string(path));
+      file.seekg(block * blockSize);
 
       auto buf { std::string(blockSize, '\0') };
-      if (!file.read(&buf[0], blockSize))
+      if (!file.read(&buf[0], blockSize) && block < lengthInBlocks - 1)
         throw FileError("unexpected end of " + std::string(path));
 
       boost::crc_32_type result;
