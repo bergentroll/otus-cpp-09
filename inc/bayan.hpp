@@ -124,7 +124,6 @@ namespace otus {
       for (auto it1 { digests.begin() }; it1 != digests.end(); ++it1) {
         auto &digest1 { *it1 };
         auto &path1 { digest1.getPath() };
-
         if (skip.count(path1)) continue;
 
         bool firstDup { true };
@@ -132,18 +131,24 @@ namespace otus {
         for (auto it2 { std::next(it1) }; it2 != digests.end() ; ++it2) {
           auto &digest2 { *it2 };
           auto &path2 { digest2.getPath() };
+          if (skip.count(path2)) continue;
 
+          bool match;
           try {
-          if (digest1.matches(digest2)) {
+            match = digest1.matches(digest2);
+          } catch (LazyDigest::FileError const &e) {
+            std::cerr << e.what() << std::endl;
+            std::cerr << "DIG1: " << path1 << ", DIG2: " << path2 << std::endl;
+            skip.insert(e.getPath());
+          }
+
+          if (match) {
             if (firstDup) {
               duplicates.push_back({ path1 });
               firstDup = false;
             }
             duplicates.back().push_back(path2);
             skip.insert(path2);
-          }
-          } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
           }
         }
       }

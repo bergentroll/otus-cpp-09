@@ -15,7 +15,14 @@ namespace otus {
   public:
     class FileError: public std::runtime_error {
     public:
-      FileError(std::string const &message): std::runtime_error (message) { }
+      FileError(std::string const &message, fs::path const &path):
+      std::runtime_error (message), path(path) { }
+
+      // Path helps to determine failed LazyDigest on binary operations.
+      fs::path getPath() const { return path; }
+
+    private:
+      fs::path const path;
     };
 
     class BlockSizeError: public std::domain_error {
@@ -31,7 +38,7 @@ namespace otus {
       try {
         size = fs::file_size(path);
       } catch (fs::filesystem_error &e) {
-        throw FileError(e.what());
+        throw FileError(e.what(), path);
       }
 
       lengthInBlocks = size / blockSize + bool(size % blockSize);
@@ -94,12 +101,12 @@ namespace otus {
 
     void getNextBlockDigest() {
       std::ifstream file { path };
-      if (!file) throw FileError("failed to open " + std::string(path));
+      if (!file) throw FileError("failed to open " + std::string(path), path);
       file.seekg(block * blockSize);
 
       auto buf { std::string(blockSize, '\0') };
       if (!file.read(&buf[0], blockSize) && block < lengthInBlocks - 1)
-        throw FileError("unexpected end of " + std::string(path));
+        throw FileError("unexpected end of " + std::string(path), path);
 
       boost::crc_32_type result;
       result.process_bytes(buf.c_str(), blockSize);
