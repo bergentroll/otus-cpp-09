@@ -59,47 +59,14 @@ namespace otus {
     void run() {
       for (auto const &path: targets) traverse(path);
 
-      std::set<fs::path> skip { };
-      std::vector<std::vector<fs::path>> dups { };
-
-      for (auto it1 { digests.begin() }; it1 != digests.end(); ++it1) {
-        auto &digest1 { *it1 };
-        auto &path1 { digest1.getPath() };
-
-        if (skip.count(path1)) continue;
-
-        bool firstDup { true };
-
-        for (auto it2 { std::next(it1) }; it2 != digests.end() ; ++it2) {
-          auto &digest2 { *it2 };
-          auto &path2 { digest2.getPath() };
-
-          try {
-          if (digest1.matches(digest2)) {
-            if (firstDup) {
-              dups.push_back({ path1 });
-              firstDup = false;
-            }
-            dups.back().push_back(path2);
-            skip.insert(path2);
-          }
-          } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-          }
-        }
-      }
-
-      for (auto const &group: dups) {
-        std::cout << std::endl;
-        for (auto const &path: group) {
-          std::cout << path << std::endl;
-        }
-      }
+      resolveDuplicates();
+      printDuplicates();
     }
 
   private:
     std::vector<fs::path> targets;
     std::vector<LazyDigest> digests { };
+    std::vector<std::vector<fs::path>> duplicates { };
     int level { -1 };
     std::string mask { "*" };
     size_t minFileSize { 2 };
@@ -151,8 +118,46 @@ namespace otus {
       }
     }
 
-    void findCollisions() {
+    void resolveDuplicates() {
+      std::set<fs::path> skip { };
+
+      for (auto it1 { digests.begin() }; it1 != digests.end(); ++it1) {
+        auto &digest1 { *it1 };
+        auto &path1 { digest1.getPath() };
+
+        if (skip.count(path1)) continue;
+
+        bool firstDup { true };
+
+        for (auto it2 { std::next(it1) }; it2 != digests.end() ; ++it2) {
+          auto &digest2 { *it2 };
+          auto &path2 { digest2.getPath() };
+
+          try {
+          if (digest1.matches(digest2)) {
+            if (firstDup) {
+              duplicates.push_back({ path1 });
+              firstDup = false;
+            }
+            duplicates.back().push_back(path2);
+            skip.insert(path2);
+          }
+          } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+          }
+        }
+      }
     }
+
+    void printDuplicates() {
+      for (auto const &group: duplicates) {
+        std::cout << std::endl;
+        for (auto const &path: group) {
+          std::cout << path << std::endl;
+        }
+      }
+    }
+
   };
 }
 
