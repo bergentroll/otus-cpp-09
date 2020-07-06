@@ -4,9 +4,9 @@
 #include <boost/crc.hpp>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
+
 
 namespace otus {
   namespace fs = std::filesystem;
@@ -20,6 +20,9 @@ namespace otus {
 
     class BlockSizeError: public std::domain_error {
       public:
+      BlockSizeError():
+      std::domain_error("comparing LazyDigest objects with different blocksize") { }
+
       BlockSizeError(std::string const &message): std::domain_error(message) { }
     };
 
@@ -54,19 +57,15 @@ namespace otus {
       while (forward());
     }
 
-    bool operator== (LazyDigest &other) {
+    bool matches(LazyDigest &other) {
       if (blockSize != other.blockSize)
-        throw BlockSizeError("comparing LazyDigest objects with different blocksize");
+        throw BlockSizeError();
 
       if (size != other.size) return false;
       for (size_t i { }; i < lengthInBlocks; ++i) {
         if (at(i) != other.at(i)) return false;
       }
       return true;
-    }
-
-    bool operator!= (LazyDigest &other) {
-      return (!operator==(other));
     }
 
     bool isCompleted() const {
@@ -109,6 +108,7 @@ namespace otus {
       ++block;
     }
   };
+
 
   std::ostream & operator<< (std::ostream &stream, LazyDigest const &digest) {
     stream << std::string(digest);

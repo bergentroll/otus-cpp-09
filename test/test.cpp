@@ -18,7 +18,7 @@ TEST(lazy_digest, equal) {
   LazyDigest dig1 { path, 21 };
   LazyDigest dig2 { path, 21 };
 
-  EXPECT_TRUE(dig1 == dig2);
+  EXPECT_TRUE(dig1.matches(dig2));
 }
 
 TEST(lazy_digest, not_equal) {
@@ -36,12 +36,12 @@ TEST(lazy_digest, not_equal) {
   LazyDigest dig1 { path1, 21 };
   LazyDigest dig2 { path2, 21 };
 
-  EXPECT_TRUE(dig1 != dig2);
+  EXPECT_FALSE(dig1.matches(dig2));
 }
 
 TEST(lazy_digest, different_block_size) {
   fs::path path { "test_file_block_size.txt" };
   ofstream f { path };
   LazyDigest dig1 { path, 20 }, dig2 { path, 21 };
-  EXPECT_THROW(dig1 == dig2, LazyDigest::BlockSizeError);
+  EXPECT_THROW(dig1.matches(dig2), LazyDigest::BlockSizeError);
 }
