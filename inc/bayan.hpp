@@ -33,6 +33,10 @@ namespace otus {
       if (this->targets.empty()) Bayan();
     }
 
+    void SetExclude(std::vector<fs::path> const &excludes) {
+      this->excludes = std::set<fs::path>(excludes.begin(), excludes.end());
+    }
+
     void setLevel(int level) { }
     int getLevel() const { return level; }
 
@@ -65,6 +69,7 @@ namespace otus {
 
   private:
     std::vector<fs::path> targets;
+    std::set<fs::path> excludes;
     std::vector<LazyDigest> digests { };
     std::vector<std::vector<fs::path>> duplicates { };
     int level { -1 };
@@ -102,9 +107,11 @@ namespace otus {
           auto entry { *it };
           if (entry.is_directory()) {
             auto tmp { fs::directory_iterator(entry, error) };
+            if (excludes.count(entry)) {
+              it.disable_recursion_pending();
+            }
             if (error) {
               std::cerr << error.message() << " on " << entry << std::endl;
-              continue;
             }
           } else if (
               entry.is_regular_file() &&
@@ -138,7 +145,6 @@ namespace otus {
             match = digest1.matches(digest2);
           } catch (LazyDigest::FileError const &e) {
             std::cerr << e.what() << std::endl;
-            std::cerr << "DIG1: " << path1 << ", DIG2: " << path2 << std::endl;
             skip.insert(e.getPath());
           }
 

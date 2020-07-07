@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,9 @@ int main(int argc, char **argv) {
 
     named_description.add_options()
       ("help,h", "give this help list")
-      ("exclude,e", "list of directories to exclude")
+      ("exclude,e",
+        po::value<vector<fs::path>>()->multitoken()->zero_tokens(),
+        "list of directories to exclude")
       ("level,l",
         po::value<int>()->default_value(-1),
         "max depth of scan, negative for not limit")
@@ -71,10 +74,14 @@ int main(int argc, char **argv) {
       targets = variables["targets"].as<vector<fs::path>>();
 
     otus::Bayan bayan { move(targets) };
+    bayan.SetExclude(variables["exclude"].as<vector<fs::path>>());
     bayan.setLevel(variables["level"].as<int>());
     bayan.setMask(variables["mask"].as<string>());
     bayan.setMinFileSize(variables["min-file"].as<long>());
     bayan.setBlockSize(variables["block-size"].as<long>());
+
+    variables.clear();
+
     bayan.run();
   } catch (po::error const &e) {
     cerr << "Options error: " << e.what() << endl;
