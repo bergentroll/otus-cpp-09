@@ -43,12 +43,11 @@ namespace otus {
         });
     }
 
-    void setLevel(int level) { }
+    void setLevel(int level) { this->level = level; }
+
     int getLevel() const { return level; }
 
-    void setMask(std::string mask) {
-      this->mask = mask;
-    }
+    void setMask(std::string mask) { this->mask = mask; }
 
     std::string getMask() const { return mask; }
 
@@ -112,15 +111,17 @@ namespace otus {
             ++it) {
           auto entry { *it };
           if (entry.is_directory()) {
+            std::cerr << "=== LVL: " << it.depth() << " " << entry << std::endl;
             auto tmpIt { fs::directory_iterator(entry, error) };
             if (error) {
               std::cerr << error.message() << " on " << entry << std::endl;
             }
             auto tmpPath { entry.path() };
             tmpPath += fs::path::preferred_separator;
-            if (excludes.count(tmpPath)) {
+            if (
+                excludes.count(tmpPath) ||
+                (level >=0 && it.depth() >= level))
               it.disable_recursion_pending();
-            }
           } else if (
               entry.is_regular_file() &&
               !entry.is_symlink() &&
