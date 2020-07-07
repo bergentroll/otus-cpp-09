@@ -34,7 +34,13 @@ namespace otus {
     }
 
     void SetExclude(std::vector<fs::path> const &excludes) {
-      this->excludes = std::set<fs::path>(excludes.begin(), excludes.end());
+      std::for_each(
+        excludes.begin(),
+        excludes.end(),
+        [this](auto path) {
+          path += fs::path::preferred_separator;
+          this->excludes.insert(path);
+        });
     }
 
     void setLevel(int level) { }
@@ -106,12 +112,14 @@ namespace otus {
             ++it) {
           auto entry { *it };
           if (entry.is_directory()) {
-            auto tmp { fs::directory_iterator(entry, error) };
-            if (excludes.count(entry)) {
-              it.disable_recursion_pending();
-            }
+            auto tmpIt { fs::directory_iterator(entry, error) };
             if (error) {
               std::cerr << error.message() << " on " << entry << std::endl;
+            }
+            auto tmpPath { entry.path() };
+            tmpPath += fs::path::preferred_separator;
+            if (excludes.count(tmpPath)) {
+              it.disable_recursion_pending();
             }
           } else if (
               entry.is_regular_file() &&
