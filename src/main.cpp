@@ -14,6 +14,15 @@ using namespace otus;
 namespace fs = std::filesystem;
 namespace po = boost::program_options;
 
+namespace std {
+  template <typename T>
+  std::ostream& operator<<(std::ostream &os, const std::vector<T> &vec) {
+    for (auto item : vec)
+      os << item << " "; 
+    return os; 
+  }
+} 
+
 int main(int argc, char **argv) {
   try {
     po::positional_options_description positional_description { };
@@ -22,7 +31,7 @@ int main(int argc, char **argv) {
     po::options_description hidden_description { "Hidden options" };
     hidden_description.add_options()
       ("targets",
-        po::value<vector<fs::path>>()->multitoken()->zero_tokens(),
+        po::value<vector<fs::path>>()->multitoken(),
         "targets directories");
 
     po::options_description named_description {
@@ -32,14 +41,14 @@ int main(int argc, char **argv) {
     named_description.add_options()
       ("help,h", "give this help list")
       ("exclude,e",
-        po::value<vector<fs::path>>()->multitoken()->zero_tokens(),
-        "list of directories to exclude")
+        po::value<vector<fs::path>>()->multitoken()->value_name("SUBDIR")->default_value({ }),
+        "list of directories to exclude, may be passed multiple times")
       ("level,l",
         po::value<int>()->default_value(-1),
         "max depth of scan, negative for not limit")
-      ("mask,m",
-        po::value<string>()->default_value("*"),
-        "mask of files to compare")
+      ("pattern,p",
+        po::value<vector<string>>()->multitoken()->value_name("REGEX")->default_value({ }),
+        "only matched files will be processed when given, may be passed multiple times")
       ("min-file,s",
         po::value<long>()->default_value(2),
         "lower limit of files in bytes to compare")
@@ -76,7 +85,7 @@ int main(int argc, char **argv) {
     otus::Bayan bayan { move(targets) };
     bayan.SetExclude(variables["exclude"].as<vector<fs::path>>());
     bayan.setLevel(variables["level"].as<int>());
-    bayan.setMask(variables["mask"].as<string>());
+    bayan.setPatterns(variables["pattern"].as<vector<string>>());
     bayan.setMinFileSize(variables["min-file"].as<long>());
     bayan.setBlockSize(variables["block-size"].as<long>());
 

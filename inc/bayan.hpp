@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <regex>
 #include <vector>
 
 #include "lazy_digest.hpp"
@@ -47,9 +48,9 @@ namespace otus {
 
     int getLevel() const { return level; }
 
-    void setMask(std::string mask) { this->mask = mask; }
-
-    std::string getMask() const { return mask; }
+    void setPatterns(std::vector<std::string> const &patterns) {
+      filePatterns = std::vector<std::regex>(patterns.begin(), patterns.end());
+    }
 
     void setMinFileSize(long fileSize) {
       if (fileSize < 0) throw Error("minimal file size can not be negative");
@@ -77,10 +78,20 @@ namespace otus {
     std::set<fs::path> excludes;
     std::vector<LazyDigest> digests { };
     std::vector<std::vector<fs::path>> duplicates { };
+    std::vector<std::regex> filePatterns { };
     int level { -1 };
-    std::string mask { "*" };
     size_t minFileSize { 2 };
     size_t blockSize { 1024 };
+
+    bool matchPatterns(std::string sample) const {
+      if (filePatterns.size() == 0) return true;
+
+      for (auto const &pattern: filePatterns)
+        if (std::regex_match(sample, pattern)) return true;
+
+      return false;
+    };
+
 
     void appendDigest(fs::path const &path) {
       try {
@@ -95,7 +106,8 @@ namespace otus {
     void traverse(fs::path const &path) {
       if (fs::is_regular_file(path)) {
         try {
-          if (fs::file_size(path) >= minFileSize) appendDigest(path);
+          if (fs::file_size(path) >= minFileSize && matchPatterns(path.filename()))
+            appendDigest(path);
         } catch (fs::filesystem_error const &e) {
           std::cerr << e.what() << std::endl;
         }
@@ -111,7 +123,6 @@ namespace otus {
             ++it) {
           auto entry { *it };
           if (entry.is_directory()) {
-            std::cerr << "=== LVL: " << it.depth() << " " << entry << std::endl;
             auto tmpIt { fs::directory_iterator(entry, error) };
             if (error) {
               std::cerr << error.message() << " on " << entry << std::endl;
@@ -125,7 +136,8 @@ namespace otus {
           } else if (
               entry.is_regular_file() &&
               !entry.is_symlink() &&
-              fs::file_size(entry) >= minFileSize) {
+              fs::file_size(entry) >= minFileSize &&
+              matchPatterns(entry.path().filename())) {
             appendDigest(entry);
           }
         }
