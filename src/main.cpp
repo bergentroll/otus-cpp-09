@@ -16,10 +16,12 @@ namespace po = boost::program_options;
 
 namespace std {
   template <typename T>
-  std::ostream& operator<<(std::ostream &os, const std::vector<T> &vec) {
-    for (auto item : vec)
-      os << item << " "; 
-    return os; 
+  ostream& operator<<(ostream &os, const vector<T> &vec) {
+    for (auto it { vec.cbegin() }; it != vec.cend(); ++it) {
+      if (it != vec.cbegin()) os << ' ';
+      os << *it;
+    }
+    return os;
   }
 } 
 
@@ -31,29 +33,32 @@ int main(int argc, char **argv) {
     po::options_description hidden_description { "Hidden options" };
     hidden_description.add_options()
       ("targets",
-        po::value<vector<fs::path>>()->multitoken(),
+        po::value<vector<fs::path>>()->
+          multitoken()->value_name("PATH")->default_value({ "./" }),
         "targets directories");
 
     po::options_description named_description {
-      "Usage: bayan [OPTIONS...] DIRS...\nAllowed options"
+      "Allowed options"
     };
 
     named_description.add_options()
       ("help,h", "give this help list")
       ("exclude,e",
-        po::value<vector<fs::path>>()->multitoken()->value_name("SUBDIR")->default_value({ }),
+        po::value<vector<fs::path>>()->
+          multitoken()->value_name("DIR")->default_value({ }),
         "list of directories to exclude, may be passed multiple times")
       ("level,l",
-        po::value<int>()->default_value(-1),
-        "max depth of scan, negative for not limit")
+        po::value<int>()->value_name("INT")->default_value(-1),
+        "max depth of scan, negative for no limit")
       ("pattern,p",
-        po::value<vector<string>>()->multitoken()->value_name("REGEX")->default_value({ }),
+        po::value<vector<string>>()->
+          multitoken()->value_name("REGEX")->default_value({ }),
         "only matched files will be processed when given, may be passed multiple times")
       ("min-file,s",
-        po::value<long>()->default_value(2),
+        po::value<long>()->value_name("BYTES")->default_value(2),
         "lower limit of files in bytes to compare")
       ("block-size,b",
-        po::value<long>()->default_value(1024),
+        po::value<long>()->value_name("BYTES")->default_value(1024),
         "default block size in bytes to process")
       ("hash-func,f",
         po::value<int>()->default_value(0),
@@ -76,13 +81,7 @@ int main(int argc, char **argv) {
       return EXIT_SUCCESS;
     }
 
-    vector<fs::path> targets;
-    if (variables["targets"].empty())
-      targets = vector<fs::path>({ "./" });
-    else
-      targets = variables["targets"].as<vector<fs::path>>();
-
-    otus::Bayan bayan { move(targets) };
+    otus::Bayan bayan { variables["targets"].as<vector<fs::path>>() };
     bayan.SetExclude(variables["exclude"].as<vector<fs::path>>());
     bayan.setLevel(variables["level"].as<int>());
     bayan.setPatterns(variables["pattern"].as<vector<string>>());
