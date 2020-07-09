@@ -23,15 +23,19 @@ namespace otus {
       Error(std::string const &message): std::runtime_error(message) { }
     };
 
-    Bayan() {
-      targets.push_back("./");
-    }
+    Bayan() = delete;
 
-    Bayan(std::vector<fs::path> const &targets): targets(targets) {
+    Bayan(std::vector<fs::path> const &targets, std::string_view hashFuncName):
+    targets(targets) {
       for (auto const &path: targets)
         if (!fs::exists(path))
           throw Error("path \"" + std::string(path) + " does not exist");
-      if (this->targets.empty()) Bayan();
+      if (hashFuncName == "crc16")
+        digestFunc = make_crc_digest<boost::crc_16_type>;
+      else if (hashFuncName == "crc32")
+        digestFunc = make_crc_digest<boost::crc_32_type>;
+      else
+        throw Error("hash function " + std::string(hashFuncName) + " is unkonwn");
     }
 
     void SetExclude(std::vector<fs::path> const &excludes) {
@@ -74,6 +78,7 @@ namespace otus {
     }
 
   private:
+    std::function<LazyDigest::DigestFunction> digestFunc;
     std::vector<fs::path> targets;
     std::set<fs::path> excludes;
     std::vector<LazyDigest> digests { };
@@ -95,7 +100,7 @@ namespace otus {
 
     void appendDigest(fs::path const &path) {
       try {
-        digests.push_back(LazyDigest(path, blockSize));
+        digests.push_back(LazyDigest(path, blockSize, digestFunc));
       } catch (LazyDigest::FileError const &e) {
         std::cerr << e.what() << std::endl;
       } catch (std::bad_alloc const &e) {

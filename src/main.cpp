@@ -61,8 +61,8 @@ int main(int argc, char **argv) {
         po::value<long>()->value_name("BYTES")->default_value(1024),
         "default block size in bytes to process")
       ("hash-func,f",
-        po::value<int>()->default_value(0),
-        "reserved for future usage");
+        po::value<string>()->value_name("NAME")->default_value("crc32"),
+        "hash function to use, crc16, crc32 is valid");
 
     po::options_description cmdline_description { };
     cmdline_description.add(hidden_description).add(named_description);
@@ -81,7 +81,9 @@ int main(int argc, char **argv) {
       return EXIT_SUCCESS;
     }
 
-    otus::Bayan bayan { variables["targets"].as<vector<fs::path>>() };
+    otus::Bayan bayan {
+      variables["targets"].as<vector<fs::path>>(),
+      variables["hash-func"].as<string>() };
     bayan.SetExclude(variables["exclude"].as<vector<fs::path>>());
     bayan.setLevel(variables["level"].as<int>());
     bayan.setPatterns(variables["pattern"].as<vector<string>>());

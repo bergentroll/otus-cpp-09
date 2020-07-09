@@ -4,6 +4,7 @@
 #include <boost/crc.hpp>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -20,8 +21,6 @@ namespace otus {
 
   class LazyDigest {
   public:
-    using digestFunction = unsigned(std::string const &);
-
     class FileError: public std::runtime_error {
     public:
       FileError(std::string const &message, fs::path const &path):
@@ -34,16 +33,18 @@ namespace otus {
       fs::path const path;
     };
 
-    class BlockSizeError: public std::domain_error {
+    class BinaryOpIncompatibility: public std::domain_error {
       public:
-      BlockSizeError():
-      std::domain_error("comparing LazyDigest objects with different blocksize") { }
-
-      BlockSizeError(std::string const &message): std::domain_error(message) { }
+      BinaryOpIncompatibility(std::string const &message): std::domain_error(message) { }
     };
 
-    LazyDigest(fs::path const &path, size_t blockSize):
-    blockSize(blockSize), path(path) {
+    using DigestFunction = unsigned (std::string const &);
+
+    LazyDigest(
+      fs::path const &path,
+      size_t blockSize,
+      std::function<DigestFunction> func = make_crc_digest<boost::crc_32_type>):
+    blockSize(blockSize), path(path), makeDigest(func) {
       try {
         size = fs::file_size(path);
       } catch (fs::filesystem_error &e) {
@@ -52,8 +53,6 @@ namespace otus {
 
       lengthInBlocks = size / blockSize + bool(size % blockSize);
       digest.reserve(lengthInBlocks);
-
-      makeDigest = make_crc_digest<boost::crc_32_type>;
     }
 
     unsigned at(size_t idx) {
@@ -77,7 +76,12 @@ namespace otus {
 
     bool matches(LazyDigest &other) {
       if (blockSize != other.blockSize)
-        throw BlockSizeError();
+        throw BinaryOpIncompatibility(
+          "comparing LazyDigest objects with different blocksize");
+      if (*makeDigest.target<DigestFunction*>() != *other.makeDigest.target<DigestFunction*>()) {
+        throw BinaryOpIncompatibility(
+          "comparing LazyDigest objects with different digest function");
+      }
 
       if (size != other.size) return false;
       for (size_t i { }; i < lengthInBlocks; ++i) {
@@ -109,7 +113,7 @@ namespace otus {
     uintmax_t lengthInBlocks;
     std::vector<unsigned> digest { };
     size_t block { 0 };
-    std::function<digestFunction> makeDigest;
+    std::function<DigestFunction> makeDigest;
 
     void getNextBlockDigest() {
       std::ifstream file { path };

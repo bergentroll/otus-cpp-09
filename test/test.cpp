@@ -43,5 +43,14 @@ TEST(lazy_digest, different_block_size) {
   fs::path path { "test_file_block_size.txt" };
   ofstream f { path };
   LazyDigest dig1 { path, 20 }, dig2 { path, 21 };
-  EXPECT_THROW(dig1.matches(dig2), LazyDigest::BlockSizeError);
+  EXPECT_THROW(dig1.matches(dig2), LazyDigest::BinaryOpIncompatibility);
+}
+
+TEST(lazy_digest, different_digest_func) {
+  fs::path path { "test_file_digest_func.txt" };
+  ofstream f { path };
+  LazyDigest
+    dig1 { path, 20, make_crc_digest<boost::crc_16_type> },
+    dig2 { path, 20, make_crc_digest<boost::crc_32_type> };
+  EXPECT_THROW(dig1.matches(dig2), LazyDigest::BinaryOpIncompatibility);
 }
