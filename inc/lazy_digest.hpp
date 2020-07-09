@@ -11,8 +11,17 @@
 namespace otus {
   namespace fs = std::filesystem;
 
+  template <typename T>
+  unsigned make_crc_digest(std::string const &input) {
+    T result;
+    result.process_bytes(input.c_str(), input.size());
+    return result.checksum();
+  }
+
   class LazyDigest {
   public:
+    using digestFunction = unsigned(std::string const &);
+
     class FileError: public std::runtime_error {
     public:
       FileError(std::string const &message, fs::path const &path):
@@ -43,6 +52,8 @@ namespace otus {
 
       lengthInBlocks = size / blockSize + bool(size % blockSize);
       digest.reserve(lengthInBlocks);
+
+      makeDigest = make_crc_digest<boost::crc_32_type>;
     }
 
     unsigned at(size_t idx) {
@@ -98,6 +109,7 @@ namespace otus {
     uintmax_t lengthInBlocks;
     std::vector<unsigned> digest { };
     size_t block { 0 };
+    std::function<digestFunction> makeDigest;
 
     void getNextBlockDigest() {
       std::ifstream file { path };
@@ -108,10 +120,7 @@ namespace otus {
       if (!file.read(&buf[0], blockSize) && block < lengthInBlocks - 1)
         throw FileError("unexpected end of " + std::string(path), path);
 
-      boost::crc_32_type result;
-      result.process_bytes(buf.c_str(), blockSize);
-
-      digest.push_back(result.checksum());
+      digest.push_back(makeDigest(buf));
       ++block;
     }
   };
