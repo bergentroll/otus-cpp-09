@@ -59,10 +59,30 @@ enable_testing()
 
 ### Packing ###################################################################
 
+include(GNUInstallDirs)
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/bayan.1
+  ${CMAKE_CURRENT_BINARY_DIR}/bayan.1)
+add_custom_command(
+  OUTPUT bayan.1.gz
+  PRE_BUILD
+  COMMAND gzip bayan.1
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Compressing man page"
+  VERBATIM)
+add_custom_target(
+  compress-man
+  ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/bayan.1.gz)
 install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin)
+install(
+  FILES ${CMAKE_BINARY_DIR}/bayan.1.gz
+  DESTINATION ${CMAKE_INSTALL_MANDIR}/man1/)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_CONTACT bergentroll@insiberia.net)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>=2.15)")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 include(CPack)

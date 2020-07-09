@@ -1,0 +1,44 @@
+.\" (C) Copyright 2020 Anton Karmanov <bergentroll@insiberia.net>,
+.TH bayan 1 "09 July 2020"
+.SH NAME
+bayan \- search for file duplicates
+.SH SYNOPSIS
+.B bayan
+[\fI\,OPTION\/\fR]... [\fI\,PATH\/\fR]...
+.SH DESCRIPTION
+.PP
+Search PATHs recursively (the current directory if nothing passed). Print to
+stout duplicated files as groups separated with empty line. Utility cares of
+filesystem and tries to minimize amount of processed blocks.
+.PP
+Mandatory arguments to long options are mandatory for short options too.
+.TP
+\fB\-b\fR, \fB\-\-block\-size\fR=\fI\,SIZE\/\fR
+size of block to process in bytes
+.TP
+\fB\-e\fR, \fB\-\-exclude\fR=\fI\,DIR...\/\fR
+list of directories to exclude, paths must be absolute and lies inside target
+directories, may be specified multiple times
+.TP
+\fB\-f\fR, \fB\-\-hash\-func\fR=\fI\,FUNCTION\/\fR
+specify hash function, may affect performance
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+list short documentation including default values
+.TP
+\fB\-l\fR, \fB\-\-level\fR=\fI\,DEPTH\/\fR
+restrict depth of search, negative value to no limit
+.TP
+\fB\-p\fR, \fB\-\-pattern\fR=\fI\,REGEX...\/\fR
+regex to match file names, only matched will be processed, may be specified
+multiple times
+.TP
+\fB\-s\fR, \fB\-\-min\-file\fR=\fI\,SIZE\/\fR
+minimum file size to process in bytes, may significantly affect performance
+.SH EXAMPLES
+.PP
+Searches /usr/ for duplicated shared library files bigger than 1 MB inside.
+.PP
+\fBbayan \-s 1000000 \-p "\&.*\\\&.so" /usr/\fR
+.SH AUTHOR
+Written by Anton "bergentroll" Karmanov as an exercise on OTUS course.

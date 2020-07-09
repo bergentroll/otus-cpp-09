@@ -16,6 +16,7 @@
 namespace otus {
   namespace fs = std::filesystem;
 
+  // TODO Multithreading.
   class Bayan {
   public:
     class Error: public std::runtime_error {
