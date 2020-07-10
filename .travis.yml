@@ -6,7 +6,8 @@ addons:
   apt:
     update: false
     packages:
-      - libgtest-dev
+      - libboost-test-dev
+      - libboost-program-options-dev
       - g++-8
 
 env:
