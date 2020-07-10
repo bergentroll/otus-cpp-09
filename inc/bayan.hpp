@@ -29,8 +29,12 @@ namespace otus {
     Bayan(std::vector<fs::path> const &targets, std::string_view hashFuncName):
     targets(targets) {
       for (auto const &path: targets)
+        try {
         if (!fs::exists(path))
           throw Error("path \"" + std::string(path) + " does not exist");
+        } catch (fs::filesystem_error const &e) {
+          throw Error(e.what());
+        }
       if (hashFuncName == "crc16")
         digestFunc = make_crc_digest<boost::crc_16_type>;
       else if (hashFuncName == "crc32")
@@ -103,24 +107,28 @@ namespace otus {
       try {
         digests.push_back(LazyDigest(path, blockSize, digestFunc));
       } catch (LazyDigest::FileError const &e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "File error: " << e.what() << std::endl;
       } catch (std::bad_alloc const &e) {
         std::cerr << "Failed to process " << path << std::endl;
       }
     }
 
-    void traverse(fs::path const &path) {
-      if (fs::is_regular_file(path)) {
-        try {
-          if (fs::file_size(path) >= minFileSize && matchPatterns(path.filename()))
-            appendDigest(path);
-        } catch (fs::filesystem_error const &e) {
-          std::cerr << e.what() << std::endl;
-        }
-        return;
-      }
+    void processFileEntry(fs::directory_entry const &entry) {
+      if (
+          entry.is_regular_file() &&
+          !entry.is_symlink() &&
+          fs::file_size(entry) >= minFileSize &&
+          matchPatterns(entry.path().filename()))
+        appendDigest(entry);
+    }
 
+    void traverse(fs::path const &path) {
       try {
+        if (!fs::is_directory(path)) {
+          processFileEntry(fs::directory_entry(path));
+          return;
+        }
+
         std::error_code error { };
         for (
             fs::recursive_directory_iterator it {
@@ -136,19 +144,17 @@ namespace otus {
             auto tmpPath { entry.path() };
             tmpPath += fs::path::preferred_separator;
             if (
-                excludes.count(tmpPath) ||
-                (level >=0 && it.depth() >= level))
+                (level >=0 && it.depth() >= level) ||
+                excludes.count(tmpPath))
               it.disable_recursion_pending();
-          } else if (
-              entry.is_regular_file() &&
-              !entry.is_symlink() &&
-              fs::file_size(entry) >= minFileSize &&
-              matchPatterns(entry.path().filename())) {
-            appendDigest(entry);
+          } else {
+            processFileEntry(entry);
           }
         }
       } catch (fs::filesystem_error const &e) {
-        throw Error(e.what());
+        std::cerr
+          << "Filesystem error on " << e.path1()
+          << ": " << e.code().message() << std::endl;
       }
     }
 
@@ -171,7 +177,7 @@ namespace otus {
           try {
             match = digest1.matches(digest2);
           } catch (LazyDigest::FileError const &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << "File error: " << e.what() << std::endl;
             skip.insert(e.getPath());
           }
 
