@@ -31,16 +31,20 @@ find_package(
 
 ### Main targets ##############################################################
 
-add_executable(${CMAKE_PROJECT_NAME} ${SRC_PATH}/main.cpp)
 add_library(
   ${CMAKE_PROJECT_NAME}-obj
   ${SRC_PATH}/lazy_digest.cpp
   ${SRC_PATH}/bayan.cpp)
 target_include_directories(
-  ${CMAKE_PROJECT_NAME}
-  PRIVATE ${Boost_INCLUDE_DIR})
-target_include_directories(
   ${CMAKE_PROJECT_NAME}-obj
+  PRIVATE ${Boost_INCLUDE_DIR})
+target_link_libraries(
+  ${CMAKE_PROJECT_NAME}-obj
+  stdc++fs)
+
+add_executable(${CMAKE_PROJECT_NAME} ${SRC_PATH}/main.cpp)
+target_include_directories(
+  ${CMAKE_PROJECT_NAME}
   PRIVATE ${Boost_INCLUDE_DIR})
 target_link_libraries(
   ${CMAKE_PROJECT_NAME}
@@ -50,7 +54,7 @@ target_link_libraries(
 
 ### Tests #####################################################################
 
-if(Boost_unit_test_framework_FOUND)
+if(Boost_UNIT_TEST_FRAMEWORK_FOUND)
   add_executable(test-suite ${TEST_PATH}/test.cpp)
 
   target_link_libraries(
@@ -76,7 +80,7 @@ configure_file(
 add_custom_command(
   OUTPUT bayan.1.gz
   PRE_BUILD
-  COMMAND gzip bayan.1
+  COMMAND gzip -k bayan.1
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Compressing man page"
   VERBATIM)

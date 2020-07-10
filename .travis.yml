@@ -15,7 +15,7 @@ env:
 
 script:
   - set -e
-  - cmake --DCMAKE_BUILD_TYPE=${BUILD_TYPE} .
+  - cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .
   - cmake --build .
   - cmake --build . --target test
   - cmake --build . --target package
