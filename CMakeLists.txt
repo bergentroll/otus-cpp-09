@@ -27,7 +27,10 @@ find_package(
 ### Main targets ##############################################################
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_PATH}/main.cpp)
-add_library(${CMAKE_PROJECT_NAME}-obj ${SRC_PATH}/lazy_digest.cpp)
+add_library(
+  ${CMAKE_PROJECT_NAME}-obj
+  ${SRC_PATH}/lazy_digest.cpp
+  ${SRC_PATH}/bayan.cpp)
 target_include_directories(
   ${CMAKE_PROJECT_NAME}
   PRIVATE ${Boost_INCLUDE_DIR})
