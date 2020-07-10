@@ -3,11 +3,7 @@
 
 #include <boost/crc.hpp>
 #include <filesystem>
-#include <fstream>
 #include <functional>
-#include <stdexcept>
-#include <string>
-
 
 namespace otus {
   namespace fs = std::filesystem;
@@ -43,68 +39,21 @@ namespace otus {
     LazyDigest(
       fs::path const &path,
       size_t blockSize,
-      std::function<DigestFunction> func = make_crc_digest<boost::crc_32_type>):
-    blockSize(blockSize), path(path), makeDigest(func) {
-      try {
-        size = fs::file_size(path);
-      } catch (fs::filesystem_error &e) {
-        throw FileError(e.what(), path);
-      }
+      std::function<DigestFunction> func = make_crc_digest<boost::crc_32_type>);
 
-      lengthInBlocks = size / blockSize + bool(size % blockSize);
-      digest.reserve(lengthInBlocks);
-    }
+    unsigned at(size_t idx);
 
-    unsigned at(size_t idx) {
-      if (idx >= lengthInBlocks) throw std::out_of_range(
-          "index " + std::to_string(idx) + " is out of range");
+    bool forward();
 
-      while (idx >= block) getNextBlockDigest();
+    void completeNow() { while (forward()); }
 
-      return digest[idx];
-    }
+    bool matches(LazyDigest &other);
 
-    bool forward() {
-      if (isCompleted()) return false;
-      getNextBlockDigest();
-      return true;
-    }
-
-    void completeNow() {
-      while (forward());
-    }
-
-    bool matches(LazyDigest &other) {
-      if (blockSize != other.blockSize)
-        throw BinaryOpIncompatibility(
-          "comparing LazyDigest objects with different blocksize");
-      if (*makeDigest.target<DigestFunction*>() != *other.makeDigest.target<DigestFunction*>()) {
-        throw BinaryOpIncompatibility(
-          "comparing LazyDigest objects with different digest function");
-      }
-
-      if (size != other.size) return false;
-      for (size_t i { }; i < lengthInBlocks; ++i) {
-        if (at(i) != other.at(i)) return false;
-      }
-      return true;
-    }
-
-    bool isCompleted() const {
-      return block == lengthInBlocks; }
+    bool isCompleted() const { return block == lengthInBlocks; }
 
     fs::path const &getPath() const { return path; }
 
-    operator std::string() const {
-      std::stringstream ss { };
-      ss << std::hex;
-      for (size_t i { }; i < lengthInBlocks; ++i) {
-        if (i > 0) ss << '-';
-        if (i < block) ss << digest[i];
-        else ss << "???";
-      }
-      return ss.str();
-    }
+    operator std::string() const;
 
   private:
     size_t blockSize;
@@ -115,22 +64,11 @@ namespace otus {
     size_t block { 0 };
     std::function<DigestFunction> makeDigest;
 
-    void getNextBlockDigest() {
-      std::ifstream file { path };
-      if (!file) throw FileError("failed to open " + std::string(path), path);
-      file.seekg(block * blockSize);
-
-      auto buf { std::string(blockSize, '\0') };
-      if (!file.read(&buf[0], blockSize) && block < lengthInBlocks - 1)
-        throw FileError("unexpected end of " + std::string(path), path);
-
-      digest.push_back(makeDigest(buf));
-      ++block;
-    }
+    void getNextBlockDigest();
   };
 
 
-  std::ostream & operator<< (std::ostream &stream, LazyDigest const &digest) {
+  inline std::ostream & operator<< (std::ostream &stream, LazyDigest const &digest) {
     stream << std::string(digest);
     return stream;
   }
