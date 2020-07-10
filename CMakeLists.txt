@@ -95,7 +95,6 @@ install(
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_CONTACT bergentroll@insiberia.net)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>=2.15)")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 include(CPack)
