@@ -1,3 +1,9 @@
+/* To the extent possible under law, bayan has waived all copyright and related
+ * or neighboring rights to program.
+ *
+ * Written by 2020 Anton Karmanov <bergentroll@insiberia.net>.
+ */
+
 #ifndef OTUS_LAZY_DIGEST_HPP
 #define OTUS_LAZY_DIGEST_HPP
 
