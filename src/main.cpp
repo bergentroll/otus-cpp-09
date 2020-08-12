@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     po::notify(variables);
 
     if (variables.count("help")) {
-      std::cout << named_description<< endl;
+      std::cout << named_description << endl;
       return EXIT_SUCCESS;
     }
 

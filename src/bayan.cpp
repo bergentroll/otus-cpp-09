@@ -130,7 +130,7 @@ void Bayan::resolveDuplicates() {
       auto &path2 { digest2.getPath() };
       if (skip.count(path2)) continue;
 
-      bool match;
+      bool match { };
       try {
         match = digest1.matches(digest2);
       } catch (LazyDigest::FileError const &e) {
